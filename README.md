@@ -1,4 +1,4 @@
-# ZPL to GDImage Converter
+# ZPL to Image Converter
 
 A PHP library to convert ZPL (Zebra Programming Language) content into images. **Generates SVG output** with support for TrueType fonts and GDImage conversion.
 
