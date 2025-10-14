@@ -20,6 +20,7 @@ use ImagickException;
  */
 class ZplToGdImage
 {
+    use RsvgConvertTrait;
     /**
      * @param string $zpl
      * @param float $widthInches
@@ -35,10 +36,13 @@ class ZplToGdImage
         int $dpi = 300,
         string $fontRenderer = 'noto'
     ): GdImage {
-        // Use ZplToImagick directly - it handles rsvg-convert fallback and other strategies
-        $imagick = ZplToImagick::convert($zpl, $widthInches, $heightInches, $dpi, $fontRenderer);
+        // Try rsvg-convert first if available (direct SVG -> PNG conversion)
+        if (self::isRsvgConvertAvailable()) {
+            return self::convertUsingRsvgConvert($zpl, $widthInches, $heightInches, $dpi, $fontRenderer);
+        }
         
-        // Convert Imagick to GDImage
+        // Fallback to Imagick conversion
+        $imagick = ZplToImagick::convert($zpl, $widthInches, $heightInches, $dpi, $fontRenderer);
         return self::imagickToGdImage($imagick);
     }
 
@@ -80,6 +84,21 @@ class ZplToGdImage
         string $fontRenderer = 'noto',
         int $quality = 9
     ): void {
+        // Try direct rsvg-convert to PNG if available (most efficient)
+        if (self::isRsvgConvertAvailable()) {
+            $svgContent = ZplToSvg::convert($zpl, $widthInches, $heightInches, $dpi, $fontRenderer);
+            $widthPixels = (int) round($widthInches * $dpi);
+            $heightPixels = (int) round($heightInches * $dpi);
+            
+            $pngData = self::rsvgConvertToPng($svgContent, $widthPixels, $heightPixels);
+            
+            if (file_put_contents($outputPath, $pngData) === false) {
+                throw new \RuntimeException("Failed to save PNG to: {$outputPath}");
+            }
+            return;
+        }
+        
+        // Fallback to GDImage conversion
         $gdImage = self::convert($zpl, $widthInches, $heightInches, $dpi, $fontRenderer);
         
         // Set PNG compression
@@ -117,6 +136,35 @@ class ZplToGdImage
         }
         
         imagedestroy($gdImage);
+    }
+
+    /**
+     * Convert ZPL to GDImage using rsvg-convert (direct SVG -> PNG conversion).
+     */
+    private static function convertUsingRsvgConvert(
+        string $zpl, 
+        float $widthInches, 
+        float $heightInches, 
+        int $dpi, 
+        string $fontRenderer
+    ): GdImage {
+        // Generate SVG first
+        $svgContent = ZplToSvg::convert($zpl, $widthInches, $heightInches, $dpi, $fontRenderer);
+        
+        // Calculate dimensions in pixels
+        $widthPixels = (int) round($widthInches * $dpi);
+        $heightPixels = (int) round($heightInches * $dpi);
+        
+        // Convert SVG to PNG using rsvg-convert
+        $pngData = self::rsvgConvertToPng($svgContent, $widthPixels, $heightPixels);
+        
+        // Create GDImage from PNG data
+        $gdImage = imagecreatefromstring($pngData);
+        if ($gdImage === false) {
+            throw new \RuntimeException('Failed to create GDImage from PNG data');
+        }
+        
+        return $gdImage;
     }
 
     /**

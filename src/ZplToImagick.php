@@ -21,6 +21,7 @@ use ImagickException;
  */
 class ZplToImagick
 {
+    use RsvgConvertTrait;
     /**
      * Rasterize an SVG string into an Imagick object.
      *
@@ -35,7 +36,8 @@ class ZplToImagick
     {
         // Try rsvg-convert first if available (more reliable for complex SVGs)
         if (self::isRsvgConvertAvailable()) {
-            return self::fromSvgUsingRsvgConvert($svgContent, $widthPixels, $heightPixels, $dpi);
+            $pngData = self::rsvgConvertToPng($svgContent, $widthPixels, $heightPixels);
+            return self::createImagickFromPngData($pngData);
         }
         
         // Fallback to direct Imagick conversion
@@ -55,63 +57,6 @@ class ZplToImagick
         $imagick = $imagick->flattenImages();
         
         return $imagick;
-    }
-    
-    private static function isRsvgConvertAvailable(): bool
-    {
-        static $available = null;
-        if ($available === null) {
-            $output = [];
-            $returnCode = 0;
-            exec('which rsvg-convert 2>/dev/null', $output, $returnCode);
-            $available = ($returnCode === 0);
-        }
-        return $available;
-    }
-    
-    private static function fromSvgUsingRsvgConvert(string $svgContent, int $widthPixels, int $heightPixels, int $dpi): \Imagick
-    {
-        // Create temporary file for SVG
-        $svgTempFile = tempnam(sys_get_temp_dir(), 'zpl_svg_') . '.svg';
-        file_put_contents($svgTempFile, $svgContent);
-        
-        try {
-            // Create temporary file for PNG output
-            $pngTempFile = tempnam(sys_get_temp_dir(), 'zpl_png_') . '.png';
-            
-            // Use rsvg-convert to render SVG to PNG
-            $command = sprintf(
-                'rsvg-convert --width=%d --height=%d --dpi-x=%d --dpi-y=%d --format=png --output=%s %s 2>&1',
-                $widthPixels,
-                $heightPixels,
-                $dpi,
-                $dpi,
-                escapeshellarg($pngTempFile),
-                escapeshellarg($svgTempFile)
-            );
-            
-            $output = [];
-            $returnCode = 0;
-            exec($command, $output, $returnCode);
-            
-            if ($returnCode !== 0 || !file_exists($pngTempFile)) {
-                throw new \RuntimeException('rsvg-convert failed: ' . implode("\n", $output));
-            }
-            
-            // Load PNG into Imagick
-            $imagick = new \Imagick();
-            $imagick->readImage($pngTempFile);
-            
-            // Cleanup
-            unlink($pngTempFile);
-            
-            return $imagick;
-        } finally {
-            // Cleanup SVG file
-            if (file_exists($svgTempFile)) {
-                unlink($svgTempFile);
-            }
-        }
     }
 
     /**
