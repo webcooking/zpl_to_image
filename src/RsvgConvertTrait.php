@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Webcooking\ZplToGdImage;
+namespace Webcooking\ZplToImage;
 
 use Imagick;
 
@@ -47,13 +47,13 @@ trait RsvgConvertTrait
         // Create temporary files
         $svgTempFile = tempnam(sys_get_temp_dir(), 'zpl_svg_');
         $pngTempFile = tempnam(sys_get_temp_dir(), 'zpl_png_');
-        
+
         try {
             // Write SVG to temp file
             if (file_put_contents($svgTempFile, $svgContent) === false) {
                 throw new \RuntimeException('Failed to write SVG to temporary file');
             }
-            
+
             // Convert SVG to PNG using rsvg-convert
             $command = sprintf(
                 'rsvg-convert --format=png --width=%d --height=%d --background-color=white %s -o %s 2>&1',
@@ -62,23 +62,22 @@ trait RsvgConvertTrait
                 escapeshellarg($svgTempFile),
                 escapeshellarg($pngTempFile)
             );
-            
+
             $output = [];
             $returnCode = 0;
             exec($command, $output, $returnCode);
-            
+
             if ($returnCode !== 0) {
                 throw new \RuntimeException('rsvg-convert failed: ' . implode("\n", $output));
             }
-            
+
             // Read PNG data
             $pngData = file_get_contents($pngTempFile);
             if ($pngData === false) {
                 throw new \RuntimeException('Failed to read PNG from temporary file');
             }
-            
+
             return $pngData;
-            
         } finally {
             // Clean up temp files
             if (file_exists($svgTempFile)) {

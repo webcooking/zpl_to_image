@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Webcooking\ZplToGdImage;
+namespace Webcooking\ZplToImage;
 
 /**
  * Class ZplToSvg
@@ -94,7 +94,7 @@ class ZplToSvg
         // Split at ^XFNORMAL to get only the template section
         $parts = preg_split('/\^XFNORMAL\^FS/', $zpl);
         $templateSection = $parts[0] ?? $zpl;
-        
+
         $commands = explode('^', $templateSection);
         $currentX = 0;
         $currentY = 0;
@@ -103,7 +103,9 @@ class ZplToSvg
         $reverseField = false;
 
         foreach ($commands as $command) {
-            if (empty($command)) continue;
+            if (empty($command)) {
+                continue;
+            }
 
             // Font command
             if (preg_match('/^A0[N]?,(\d+),(\d+)/', $command, $matches)) {
@@ -144,10 +146,16 @@ class ZplToSvg
     private function renderFields(): void
     {
         foreach ($this->fieldData as $fieldNum => $data) {
-            if (empty($data)) continue;
-            if (!isset($this->fieldPositions[$fieldNum])) continue;
+            if (empty($data)) {
+                continue;
+            }
+            if (!isset($this->fieldPositions[$fieldNum])) {
+                continue;
+            }
             // Skip fields used by barcodes
-            if (isset($this->barcodeFields[$fieldNum])) continue;
+            if (isset($this->barcodeFields[$fieldNum])) {
+                continue;
+            }
 
             $pos = $this->fieldPositions[$fieldNum];
             $font = $this->fieldFonts[$fieldNum] ?? ['height' => 30, 'width' => 30, 'reverse' => false];
@@ -164,7 +172,7 @@ class ZplToSvg
 
     /**
      * Parses ZPL to extract field data.
-     * 
+     *
      * ZPL can have two formats:
      * 1. Inline: ^FN123^FDdata^FS
      * 2. Separated: Template defines ^FN123^FS, then later ^FN123^FDdata^FS provides data
@@ -173,15 +181,17 @@ class ZplToSvg
     {
         // Find all ^FN followed by ^FD (with or without ^FS in between)
         // Pattern: ^FN(number) possibly followed by ^FS, then later ^FD(data)
-        
+
         // Split into individual commands for easier parsing
         $commands = preg_split('/\^/', $zpl);
-        
+
         $pendingFN = null;
-        
+
         foreach ($commands as $command) {
-            if (empty($command)) continue;
-            
+            if (empty($command)) {
+                continue;
+            }
+
             // Check if it's a FN command
             if (preg_match('/^FN(\d+)/', $command, $matches)) {
                 $pendingFN = (int)$matches[1];
@@ -192,7 +202,7 @@ class ZplToSvg
                 // Remove trailing ^FS if present
                 $data = preg_replace('/\^FS$/', '', $data);
                 $data = trim($data);
-                
+
                 if ($pendingFN !== null) {
                     // Associate this data with the last FN we saw
                     $this->fieldData[$pendingFN] = $data;
@@ -221,14 +231,16 @@ class ZplToSvg
         $currentFontWidth = 30;
 
         foreach ($commands as $i => $command) {
-            if (empty($command)) continue;
+            if (empty($command)) {
+                continue;
+            }
 
             // Font command (for direct FD text)
             if (preg_match('/^A0[N]?,(\d+),(\d+)/', $command, $matches)) {
                 $currentFontHeight = (int)$matches[1];
                 $currentFontWidth = (int)$matches[2];
             }
-            
+
             // Field Origin for non-field elements
             elseif (preg_match('/^FO\s*(\d+)\s*,\s*(\d+)/', $command, $matches)) {
                 $this->currentX = (int)$matches[1];
@@ -236,28 +248,28 @@ class ZplToSvg
                 // Reset reverse field on new field origin (starts new logical line)
                 $this->reverseField = false;
             }
-            
+
             // Field Separator: FS (resets reverse field if not consumed)
             elseif (preg_match('/^FS\s*$/', $command)) {
                 // Reset reverse field at end of field
                 $this->reverseField = false;
             }
-            
+
             // Field Reverse flag
             elseif (preg_match('/^FR\s*$/', $command)) {
                 $this->reverseField = true;
             }
-            
+
             // Graphic Box: GB width,height,thickness
             elseif (preg_match('/^GB\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/', $command, $matches)) {
                 $width = (int)$matches[1];
                 $height = (int)$matches[2];
                 $thickness = (int)$matches[3];
-                
+
                 // Determine if this is a filled rectangle or a line
                 $isFilled = $thickness > $width || $thickness > $height;
                 $isLine = $thickness == $width || $thickness == $height;
-                
+
                 if ($isFilled) {
                     // Filled rectangle
                     if ($this->reverseField) {
@@ -289,7 +301,7 @@ class ZplToSvg
                 // Always reset reverse field after GB
                 $this->reverseField = false;
             }
-            
+
             // Field Data (direct text, not via FN)
             elseif (preg_match('/^FD(.+?)(?:FS)?$/', $command, $matches)) {
                 $text = trim($matches[1]);
@@ -302,7 +314,7 @@ class ZplToSvg
                         break;
                     }
                 }
-                
+
                 if (!$hasFN && !empty($text)) {
                     // Direct text rendering
                     $this->currentFontHeight = $currentFontHeight;
@@ -310,24 +322,24 @@ class ZplToSvg
                     $this->drawText($text);
                 }
             }
-            
+
             // Barcode Width: BY width[,ratio]
             elseif (preg_match('/^BY\s*(\d+)/', $command, $matches)) {
                 $currentBarcodeWidth = (int)$matches[1];
             }
-            
+
             // Code 128 Barcode: BCN,height,printInterpretationLine[,printAbove,checkDigit,mode]
             elseif (preg_match('/^BCN\s*,\s*(\d+)\s*,?\s*(\w*)/', $command, $matches)) {
                 $currentBarcodeHeight = (int)$matches[1];
                 $printInterpretation = !empty($matches[2]) ? $matches[2] : 'Y';
-                
+
                 // Look for the FN that follows this BCN
                 for ($j = $i + 1; $j < count($commands); $j++) {
                     if (preg_match('/^FN(\d+)/', $commands[$j], $fnMatches)) {
                         $fieldNum = (int)$fnMatches[1];
                         // Mark this FN as used by a barcode so it won't be rendered as text
                         $this->barcodeFields[$fieldNum] = true;
-                        
+
                         if (isset($this->fieldData[$fieldNum])) {
                             $barcodeData = $this->fieldData[$fieldNum];
                             $this->drawBarcode($barcodeData, $currentBarcodeWidth, $currentBarcodeHeight, $printInterpretation);
@@ -365,7 +377,9 @@ class ZplToSvg
      */
     private function drawTextWithTTF(string $text): void
     {
-        if (empty($text)) return;
+        if (empty($text)) {
+            return;
+        }
         if (!$this->fontPath || !file_exists($this->fontPath)) {
             throw new \RuntimeException("Font file not found: {$this->fontPath}");
         }
@@ -373,7 +387,7 @@ class ZplToSvg
         // For TTF fonts, use the ZPL font size more directly
         // ZPL height is in dots, we scale it slightly
         $fontSize = (int)round($this->currentFontHeight * 0.6);
-        
+
         $color = 'black';
         $bgColor = null;
 
@@ -382,7 +396,7 @@ class ZplToSvg
             // Calculate approximate text width (rough estimate)
             $charWidth = $fontSize * 0.6; // Approximate
             $totalWidth = strlen($text) * $charWidth;
-            
+
             $this->svg->addRect(
                 $this->currentX,
                 $this->currentY,
@@ -391,7 +405,7 @@ class ZplToSvg
                 'black',
                 'none'
             );
-            
+
             $color = 'white';
             $this->reverseField = false;
         }
@@ -437,24 +451,24 @@ class ZplToSvg
         // Code 128 encoding patterns (simplified for basic ASCII)
         // Each character is encoded as a pattern of bars and spaces
         $code128Patterns = $this->getCode128Patterns();
-        
+
         $x = $this->currentX;
         $y = $this->currentY;
-        
+
         // ZPL barWidth is in dots, but we need to scale it down
         // BY3 in ZPL doesn't mean 3 pixels per module, it's relative
         // Divide by 1.5 to get reasonable width (empirically determined)
         $barWidth = max(1, (int)round($barWidth / 1.5));
-        
+
         // Start pattern (Code 128B Start)
         $pattern = '11010010000';
         $x = $this->drawBarcodePattern($pattern, $x, $y, $height, $barWidth);
-        
+
         // Encode each character
         for ($i = 0; $i < strlen($data); $i++) {
             $char = $data[$i];
             $ascii = ord($char);
-            
+
             // Get pattern for this character (simplified mapping)
             if ($ascii >= 32 && $ascii <= 127) {
                 $patternIndex = $ascii - 32;
@@ -464,18 +478,18 @@ class ZplToSvg
                 }
             }
         }
-        
+
         // Stop pattern
         $pattern = '1100011101011';
         $x = $this->drawBarcodePattern($pattern, $x, $y, $height, $barWidth);
-        
+
         // Draw the text below barcode only if printInterpretation is not 'N'
         if (strtoupper($printInterpretation) !== 'N') {
             $textY = $y + $height + 20;
             $this->svg->addText($data, $this->currentX, $textY, 12, 'black');
         }
     }
-    
+
     /**
      * Draw a barcode pattern (1=black bar, 0=white space).
      */
@@ -489,7 +503,7 @@ class ZplToSvg
         }
         return $x;
     }
-    
+
     /**
      * Get Code 128 encoding patterns (simplified subset).
      */

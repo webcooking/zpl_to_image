@@ -2,8 +2,8 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Webcooking\ZplToGdImage\ZplToSvg;
-use Webcooking\ZplToGdImage\ZplToGdImage;
+use Webcooking\ZplToImage\ZplToImage;
+use Webcooking\ZplToImage\ZplToSvg;
 
 // Couleurs pour le terminal
 $colors = [
@@ -14,7 +14,8 @@ $colors = [
     'reset' => "\033[0m",
 ];
 
-function colorize($text, $color, $colors) {
+function colorize($text, $color, $colors)
+{
     return $colors[$color] . $text . $colors['reset'];
 }
 
@@ -39,41 +40,40 @@ $errorCount = 0;
 foreach ($zplFiles as $zplFile) {
     $filename = basename($zplFile, '.zpl');
     echo colorize("📄 Test: ", 'yellow', $colors) . $filename . "\n";
-    
+
     try {
         // Lecture du fichier ZPL
         $zplContent = file_get_contents($zplFile);
-        
+
         if (empty($zplContent)) {
             throw new Exception("Fichier vide");
         }
-        
+
         // Conversion en SVG
         $svgContent = ZplToSvg::convert($zplContent, 4.0, 6.0, 300, $fontRenderer);
-        
+
         // Nom du fichier de sortie SVG
         $outputFile = __DIR__ . '/output_' . $filename . '.svg';
         // Sauvegarde du SVG
         file_put_contents($outputFile, $svgContent);
         $fileSize = number_format(strlen($svgContent) / 1024, 2);
         echo colorize("   ✅ Success", 'green', $colors) . " - {$fileSize} KB - " . basename($outputFile) . "\n";
-        
-        // Try to generate JPEG via ZplToGdImage::toJpeg()
+
+        // Try to generate JPEG via ZplToImage::toJpeg()
         $jpgPath = __DIR__ . '/output_' . $filename . '.jpg';
         try {
-            ZplToGdImage::toJpeg($zplContent, $jpgPath, 4.0, 6.0, 300, $fontRenderer, 90);
+            ZplToImage::toJpeg($zplContent, $jpgPath, 4.0, 6.0, 300, $fontRenderer, 90);
             $jpgSize = number_format(filesize($jpgPath) / 1024, 2);
             echo colorize("   ✅ JPEG generated", 'green', $colors) . " - {$jpgSize} KB - " . basename($jpgPath) . "\n";
         } catch (Throwable $e) {
             echo colorize("   ⚠️ JPEG not generated", 'yellow', $colors) . " - " . $e->getMessage() . "\n";
         }
         $successCount++;
-        
     } catch (Exception $e) {
         echo colorize("   ❌ Erreur: ", 'red', $colors) . $e->getMessage() . "\n";
         $errorCount++;
     }
-    
+
     echo "\n";
 }
 

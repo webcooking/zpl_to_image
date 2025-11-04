@@ -8,7 +8,7 @@ This library provides **3 types of ZPL conversion**:
 
 - **ZPL → SVG** (`ZplToSvg`) - Vector rendering with TrueType fonts
 - **ZPL → Imagick** (`ZplToImagick`) - Rasterization via rsvg-convert or Imagick 
-- **ZPL → GDImage** (`ZplToGdImage`) - PNG/JPEG export
+- **ZPL → GDImage** (`ZplToImage`) - PNG/JPEG export
 
 ## Requirements
 
@@ -28,8 +28,8 @@ This library provides **3 types of ZPL conversion**:
 Clone the repository and run Composer install:
 
 ```bash
-git clone https://github.com/webcooking/zpl_to_gdimage.git
-cd zpl_to_gdimage
+git clone https://github.com/webcooking/zpl_to_image.git
+cd zpl_to_image
 composer install
 ```
 
@@ -38,7 +38,7 @@ composer install
 ### Method 1: Generate SVG (Recommended)
 
 ```php
-use Webcooking\ZplToGdImage\ZplToSvg;
+use Webcooking\ZplToImage\ZplToSvg;
 
 $zplContent = file_get_contents('path/to/your/label.zpl');
 
@@ -70,17 +70,17 @@ file_put_contents('output.svg', $svgContent);
 ### Method 2: Convert to GDImage (Raster with Imagick)
 
 ```php
-use Webcooking\ZplToGdImage\ZplToGdImage;
+use Webcooking\ZplToImage\ZplToImage;
 
 $zplContent = file_get_contents('path/to/your/label.zpl');
 
 // Convert to GDImage with default font (Noto Sans)
-$image = ZplToGdImage::convert($zplContent);
+$image = ZplToImage::convert($zplContent);
 imagepng($image, 'output.png');
 imagedestroy($image);
 
 // With custom parameters and font
-$image = ZplToGdImage::convert(
+$image = ZplToImage::convert(
     $zplContent,
     4.0,           // width in inches
     6.0,           // height in inches
@@ -94,12 +94,12 @@ imagedestroy($image);
 ### Method 3: Direct File Export (PNG/JPEG)
 
 ```php
-use Webcooking\ZplToGdImage\ZplToGdImage;
+use Webcooking\ZplToImage\ZplToImage;
 
 $zplContent = file_get_contents('path/to/your/label.zpl');
 
 // Save directly as PNG (best quality)
-ZplToGdImage::toPng(
+ZplToImage::toPng(
     $zplContent,
     'output.png',  // output path
     4.0,           // width in inches
@@ -110,7 +110,7 @@ ZplToGdImage::toPng(
 );
 
 // Save directly as JPEG
-ZplToGdImage::toJpeg(
+ZplToImage::toJpeg(
     $zplContent,
     'output.jpg',  // output path
     4.0,           // width in inches
@@ -121,7 +121,7 @@ ZplToGdImage::toJpeg(
 );
 
 // Just get SVG string (no rasterization)
-$svg = ZplToGdImage::toSvg($zplContent, 4.0, 6.0, 300, 'noto');
+$svg = ZplToImage::toSvg($zplContent, 4.0, 6.0, 300, 'noto');
 file_put_contents('output.svg', $svg);
 ```
 
@@ -130,7 +130,7 @@ file_put_contents('output.svg', $svg);
 If you prefer to work with Imagick directly (for advanced processing, composites or filters), use `ZplToImagick` which returns an `Imagick` object.
 
 ```php
-use Webcooking\ZplToGdImage\ZplToImagick;
+use Webcooking\ZplToImage\ZplToImagick;
 
 $imagick = ZplToImagick::convert($zplContent, 4.0, 6.0, 300, 'noto');
 // Save as PNG/JPEG using Imagick methods

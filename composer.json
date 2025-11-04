@@ -1,5 +1,5 @@
 {
-    "name": "webcooking/zpl-to-gdimage",
+    "name": "webcooking/zpl-to-image",
     "description": "A PHP library to convert ZPL content to SVG images or GDImage objects",
     "type": "library",
     "license": "LGPL-3.0-or-later",
@@ -15,12 +15,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Webcooking\\ZplToGdImage\\": "src/"
+            "Webcooking\\ZplToImage\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Webcooking\\ZplToGdImage\\Tests\\": "tests/"
+            "Webcooking\\ZplToImage\\Tests\\": "tests/"
         }
     },
     "scripts": {

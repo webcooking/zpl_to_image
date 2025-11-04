@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE_NAME=webcooking/zpl-to-gdimage:imagick
+IMAGE_NAME=webcooking/zpl-to-image:imagick
 CONTEXT_DIR=$(pwd)
 
 # Build image

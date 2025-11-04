@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Webcooking\ZplToGdImage;
+namespace Webcooking\ZplToImage;
 
 /**
  * SVG Builder for ZPL rendering
@@ -28,10 +28,10 @@ class SvgBuilder
     }
 
     public function addText(
-        string $text, 
-        int $x, 
-        int $y, 
-        int $fontSize, 
+        string $text,
+        int $x,
+        int $y,
+        int $fontSize,
         string $color = 'black',
         string $fontFamily = 'Arial, sans-serif',
         string $fontWeight = 'normal',
@@ -39,7 +39,7 @@ class SvgBuilder
         ?int $textLength = null
     ): void {
         $text = htmlspecialchars($text, ENT_XML1);
-        
+
         // If textLength is specified, use it to control exact text width
         if ($textLength !== null && $textLength > 0) {
             $this->elements[] = sprintf(
@@ -93,18 +93,18 @@ class SvgBuilder
         string $fontWeight
     ): void {
         $text = htmlspecialchars($text, ENT_XML1);
-        
+
         // Estimate natural text width assuming average character width of 0.6 * height
         $estimatedCharWidth = $targetHeight * 0.6;
         $estimatedNaturalWidth = strlen($text) * $estimatedCharWidth;
-        
+
         // Calculate scale to fit
         $scaleX = min(1.0, $targetWidth / max(1, $estimatedNaturalWidth));
         $scaleY = 1.0;
-        
+
         // Use foreignObject with CSS transform to fit text in box
         $transformStyle = sprintf('transform:scale(%.3f,%.3f);', $scaleX, $scaleY);
-        
+
         $this->elements[] = sprintf(
             '<foreignObject x="%d" y="%d" width="%d" height="%d"><div xmlns="http://www.w3.org/1999/xhtml" style="width:%dpx;height:%dpx;display:flex;align-items:flex-end;overflow:hidden;"><span style="font-family:%s;font-size:%dpx;color:%s;font-weight:%s;white-space:nowrap;transform-origin:left bottom;%s">%s</span></div></foreignObject>',
             $x,
@@ -134,7 +134,7 @@ class SvgBuilder
         string $lengthAdjust = 'spacing'
     ): void {
         $text = htmlspecialchars($text, ENT_XML1);
-        
+
         $this->elements[] = sprintf(
             '<text x="%d" y="%d" font-family="%s" font-size="%d" fill="%s" font-weight="%s" textLength="%d" lengthAdjust="%s">%s</text>',
             $x,
@@ -160,7 +160,7 @@ class SvgBuilder
         float $letterSpacing = 0
     ): void {
         $text = htmlspecialchars($text, ENT_XML1);
-        
+
         if ($letterSpacing != 0) {
             $this->elements[] = sprintf(
                 '<text x="%d" y="%d" font-family="%s" font-size="%d" fill="%s" font-weight="%s" letter-spacing="%.2fpx">%s</text>',
@@ -193,18 +193,18 @@ class SvgBuilder
         int $y,
         int $fontSize,
         string $color = 'black',
-        string $fontPath = null
+        ?string $fontPath = null
     ): void {
         $text = htmlspecialchars($text, ENT_XML1);
-        
+
         // Generate a unique font family name based on the font file
         $fontFamily = 'CustomFont-' . md5($fontPath ?? 'default');
-        
+
         // Store font for embedding
         if ($fontPath && file_exists($fontPath)) {
             $this->customFonts[$fontFamily] = $fontPath;
         }
-        
+
         $this->elements[] = sprintf(
             '<text x="%d" y="%d" font-family="%s" font-size="%d" fill="%s">%s</text>',
             $x,
@@ -217,11 +217,11 @@ class SvgBuilder
     }
 
     public function addRect(
-        int $x, 
-        int $y, 
-        int $width, 
-        int $height, 
-        string $fill = 'none', 
+        int $x,
+        int $y,
+        int $width,
+        int $height,
+        string $fill = 'none',
         string $stroke = 'black',
         int $strokeWidth = 1
     ): void {
@@ -254,7 +254,7 @@ class SvgBuilder
     {
         // Generate simple Code 128-like barcode representation
         $barcodeX = $x;
-        
+
         // Start with bars for each character
         for ($i = 0; $i < strlen($data); $i++) {
             // Alternate black and white bars
@@ -263,7 +263,7 @@ class SvgBuilder
             }
             $barcodeX += $barWidth;
         }
-        
+
         // Add text below barcode
         $this->addText($data, $x, $y + $height + 15, 12, 'black');
     }
@@ -272,8 +272,8 @@ class SvgBuilder
     {
         // Embed Swiss 721 font if available
         $fontDefs = $this->embedFonts();
-        
-        $svg = sprintf(
+
+        return sprintf(
             '<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
 %s
@@ -287,36 +287,34 @@ class SvgBuilder
             $fontDefs,
             implode("\n", $this->elements)
         );
-        
-        return $svg;
     }
-    
+
     private function embedFonts(): string
     {
         $fontDir = __DIR__ . '/../fonts';
         $defs = "<defs>\n<style>\n";
-        
+
         // Embed custom fonts added via addTextWithFont
         foreach ($this->customFonts as $fontFamily => $fontPath) {
             if (file_exists($fontPath)) {
                 $fontData = base64_encode(file_get_contents($fontPath));
                 $extension = pathinfo($fontPath, PATHINFO_EXTENSION);
                 $mimeType = $extension === 'otf' ? 'font/opentype' : 'font/truetype';
-                
+
                 $defs .= "@font-face {\n";
                 $defs .= "  font-family: '{$fontFamily}';\n";
                 $defs .= "  src: url('data:{$mimeType};base64,{$fontData}');\n";
                 $defs .= "}\n";
             }
         }
-        
+
         // Try to embed Swiss 721 fonts (legacy support)
         $fonts = [
             'Swiss721BT-Roman' => 'Swiss721BT-Roman.otf',
             'Swiss721BT-Medium' => 'Swiss721BT-Medium.otf',
             'Swiss721BT-BoldCondensed' => 'Swiss721BT-BoldCondensed.otf',
         ];
-        
+
         foreach ($fonts as $fontName => $fontFile) {
             $fontPath = $fontDir . '/' . $fontFile;
             if (file_exists($fontPath)) {
@@ -327,7 +325,7 @@ class SvgBuilder
                 $defs .= "}\n";
             }
         }
-        
+
         $defs .= "</style>\n</defs>\n";
         return $defs;
     }

@@ -9,10 +9,9 @@
 
 declare(strict_types=1);
 
-namespace Webcooking\ZplToGdImage;
+namespace Webcooking\ZplToImage;
 
 use Imagick;
-use ImagickException;
 
 /**
  * Class ZplToImagick
@@ -39,24 +38,22 @@ class ZplToImagick
             $pngData = self::rsvgConvertToPng($svgContent, $widthPixels, $heightPixels);
             return self::createImagickFromPngData($pngData);
         }
-        
+
         // Fallback to direct Imagick conversion
         $imagick = new \Imagick();
-        
+
         // Set density for proper rendering
         $imagick->setResolution($dpi, $dpi);
-        
+
         // Read SVG content
         $imagick->readImageBlob($svgContent);
-        
+
         // Resize to exact dimensions if needed
         $imagick->resizeImage($widthPixels, $heightPixels, \Imagick::FILTER_LANCZOS, 1);
-        
+
         // Flatten the image (remove transparency)
         $imagick->setImageBackgroundColor('white');
-        $imagick = $imagick->flattenImages();
-        
-        return $imagick;
+        return $imagick->flattenImages();
     }
 
     /**
