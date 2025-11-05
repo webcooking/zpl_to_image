@@ -8,7 +8,7 @@ This library provides **3 types of ZPL conversion**:
 
 - **ZPL → SVG** (`ZplToSvg`) - Vector rendering with TrueType fonts
 - **ZPL → Imagick** (`ZplToImagick`) - Rasterization via rsvg-convert or Imagick 
-- **ZPL → GDImage** (`ZplToImage`) - PNG/JPEG export
+- **ZPL → GDImage** (`ZplToGdImage`) - PNG/JPEG export
 
 ## Requirements
 
@@ -70,17 +70,17 @@ file_put_contents('output.svg', $svgContent);
 ### Method 2: Convert to GDImage (Raster with Imagick)
 
 ```php
-use Webcooking\ZplToImage\ZplToImage;
+use Webcooking\ZplToImage\ZplToGdImage;
 
 $zplContent = file_get_contents('path/to/your/label.zpl');
 
 // Convert to GDImage with default font (Noto Sans)
-$image = ZplToImage::convert($zplContent);
+$image = ZplToGdImage::convert($zplContent);
 imagepng($image, 'output.png');
 imagedestroy($image);
 
 // With custom parameters and font
-$image = ZplToImage::convert(
+$image = ZplToGdImage::convert(
     $zplContent,
     4.0,           // width in inches
     6.0,           // height in inches
@@ -94,12 +94,12 @@ imagedestroy($image);
 ### Method 3: Direct File Export (PNG/JPEG)
 
 ```php
-use Webcooking\ZplToImage\ZplToImage;
+use Webcooking\ZplToImage\ZplToGdImage;
 
 $zplContent = file_get_contents('path/to/your/label.zpl');
 
 // Save directly as PNG (best quality)
-ZplToImage::toPng(
+ZplToGdImage::toPng(
     $zplContent,
     'output.png',  // output path
     4.0,           // width in inches
@@ -110,7 +110,7 @@ ZplToImage::toPng(
 );
 
 // Save directly as JPEG
-ZplToImage::toJpeg(
+ZplToGdImage::toJpeg(
     $zplContent,
     'output.jpg',  // output path
     4.0,           // width in inches
@@ -121,7 +121,7 @@ ZplToImage::toJpeg(
 );
 
 // Just get SVG string (no rasterization)
-$svg = ZplToImage::toSvg($zplContent, 4.0, 6.0, 300, 'noto');
+$svg = ZplToGdImage::toSvg($zplContent, 4.0, 6.0, 300, 'noto');
 file_put_contents('output.svg', $svg);
 ```
 

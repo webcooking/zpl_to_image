@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Webcooking\ZplToImage\ZplToImage;
+use Webcooking\ZplToImage\ZplToGdImage;
 use Webcooking\ZplToImage\ZplToSvg;
 
 // Couleurs pour le terminal
@@ -59,10 +59,10 @@ foreach ($zplFiles as $zplFile) {
         $fileSize = number_format(strlen($svgContent) / 1024, 2);
         echo colorize("   ✅ Success", 'green', $colors) . " - {$fileSize} KB - " . basename($outputFile) . "\n";
 
-        // Try to generate JPEG via ZplToImage::toJpeg()
+        // Try to generate JPEG via ZplToGdImage::toJpeg()
         $jpgPath = __DIR__ . '/output_' . $filename . '.jpg';
         try {
-            ZplToImage::toJpeg($zplContent, $jpgPath, 4.0, 6.0, 300, $fontRenderer, 90);
+            ZplToGdImage::toJpeg($zplContent, $jpgPath, 4.0, 6.0, 300, $fontRenderer, 90);
             $jpgSize = number_format(filesize($jpgPath) / 1024, 2);
             echo colorize("   ✅ JPEG generated", 'green', $colors) . " - {$jpgSize} KB - " . basename($jpgPath) . "\n";
         } catch (Throwable $e) {

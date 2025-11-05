@@ -17,7 +17,7 @@ use Imagick;
 /**
  * ZPL to GDImage converter.
  */
-class ZplToImage
+class ZplToGdImage
 {
     use RsvgConvertTrait;
     /**
